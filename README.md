@@ -1,1 +1,1 @@
-# texter_twilio_api
+Rails app: practice app utilizing twilio api, users can send text messages, set up address books, and send messages to multiple contacts. Sending message requires that "from" roperty be a registered twilio number.

@@ -1,0 +1,14 @@
+<%= content_for(:title, "Profile") %>
+
+<h2> <%= @user.email %>: Here is your profile </h2></br>
+
+<h4> Email: <%= @user.email %> </h4></br>
+
+<%= link_to "View Contacts", contacts_path, :class => "btn btn-default" %>
+
+</br></br>
+
+
+</br>
+
+<%= link_to "Home Page", root_path, :class => "btn btn-default" %>

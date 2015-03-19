@@ -1,0 +1,17 @@
+<h1> Address </h1>
+
+<% @user.contacts.each do |contact| %>
+	<h3><%= contact.name %> </h3>
+	<h5>Phone: <%=contact.number %> <h5>
+	<%= link_to "New Message", new_contact_message_path(contact) %>
+<% end %>
+</br>
+</br>
+<hr>
+</br>
+<%= link_to "New Contact", new_contact_path %>
+</br>
+</br>
+</br>
+<%= link_to "Home", root_path %> </br> </br>
+

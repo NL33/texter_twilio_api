@@ -1,0 +1,9 @@
+<h1>New Message</h1>
+
+<% if @contact %>
+	<%= render 'new_message_contact' %>
+<% else %>
+	<%= render 'new_message_nocontact' %>
+<% end %>
+
+<%= link_to "Home Page", root_path, :class => "btn btn-default" %>

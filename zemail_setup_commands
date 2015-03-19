@@ -1,0 +1,148 @@
+[NOT USED IN THIS APP, BUT FOR FUTURE REFERENCE, FROM TWITTER CLONE APP:]
+
+Steps used for sending welcome email after signup (while also using devise for authentication):
+
+
+i)*	$ rails g mailer user_mailer signup_confirmation
+
+ii)*	user_mailer.rb:
+class UserMailer < ApplicationMailer
+  default from: "welcome@twitterclone.com" 
+ 
+  def signup_confirmation(user)
+    @user = user #this specifies who to send email to. We set the instance variable here to use it in the view
+
+    mail to: user.email, subject: "Welcome to TwitterClone"
+  end
+end
+
+iii)* signup_confirmation.text.erb:
+<%= @user.email %>,
+
+Thank you for signing up.
+
+<%= root_path %> //note: could do @user if show page exists
+
+iv)*	signup_confirmation.html.erb:
+<p><%= @user.email %>,</p>
+
+<p>Thank you for signing up.</p>
+
+<p><%=link_to "Tweets", root_path %> //note: could do @user instead of root_path  if show page exists
+
+v)*	user_controller (to define @user):
+
+class UsersController < ApplicationController
+  def create
+    @user = User.new(params[:user])
+  end
+
+end
+
+vi)*	user.rb (note—this is a function of using devise. If we were not using devise, we would do more in the user controller per railscast 61 (revised)):
+
+  after_create :send_welcome_message
+
+  def send_welcome_message
+    UserMailer.signup_confirm(self).deliver
+  end
+
+vii)*	config/enviornments/development.rb:
+
+  # Don't care if the mailer can't send.
+  config.action_mailer.raise_delivery_errors = true
+  config.action_mailer.delivery_method = :letter_opener
+
+viii)*	NOTE: chances are that we’ll want to add options to our production configuration file too but with different values to suit the application when it’s in production.
+
+ix)*	through devise, we have already set up a local host for the mailer (necessary if include url in email):
+
+    config.action_mailer.default_url_options = { host: 'localhost', port: 3000 }
+
+x)*	set up letter opener gem to preview email in development environment (discussed in railscast 61):
+
+/Gemfile
+gem "letter_opener", :group => :development
+Next we need to change the delivery_method in the config file.
+
+/config/environments/development.rb
+config.action_mailer.delivery_method = :letter_opener
+  
+**Restart server
+
+(alternative:
+ config.action_mailer.delivery_method =:smtp
+  config.action_mailer.smtp_settings = {
+  address:              'smtp.gmail.com',
+  port:                 587,
+  domain:               'gmail.com',
+  user_name:            'myname@gmail.com',
+  password:             'mypassword',
+  authentication:       'plain',
+  enable_starttls_auto: true  })
+
+  ******************
+
+
+
+Steps for sending email to a user when another user mentions the "handle" (@username) of the first email in a tweet:
+
+i)*  identify users (if any) mentioned in any tweet with a @ before the username:
+a)  models/tweet.rb:
+def find_mentioned_users
+  users = []
+  scan_results = self.text.scan(/@[[:alnum:]]+/i) #scan the text for @ followed by any alpha/numeric character(or characters), case insensitive. No whitespace "+" means any of here. Returns an array of matches.
+  if scan_results
+    scan_results.each do | result | #another method: scan_results.map { |result| result.delete "@"}
+      user_name = result.delete "@"  #deletes "@". Another method would be result.slice(0) to delete first character.
+      user = User.where({:username => user_name}).first
+      users << user
+     end
+   end
+    users
+  end
+
+ii)* send any mentioned user an email
+a)*  models/tweet.rb: set method to activate the mailer methods
+
+def receive_email(mentioned_user)
+    UserMailer.notification_email(mentioned_user, self).deliver
+  end  #action is called by the controller. Notification_email is defined in the UserMailer.rb file
+
+b)*  app/controllers/tweets_controller.rb: activate the tweet method (which activates the mailer method) when a tweet is created
+def create
+    @tweets = Tweet.all
+    @tweet = current_user.tweets.new(tweet_params)
+    if @tweet.save
+        mentioned_users = @tweet.find_mentioned_users
+        mentioned_users.each do |mentioned_user|
+          @tweet.receive_email(mentioned_user)
+        end
+        respond_to do |format|
+          format.html { redirect_to root_path}
+          format.js #refers to separate tweet template--here, with create action in name (views/tweets/create.js.erb)
+         end
+      else
+        render 'new' 
+      end
+  end
+
+c)*  user_mailer.rb:  defines the mailer method (activating the email) and provides the instance variable definitions:
+class UserMailer < ApplicationMailer
+  default from: "welcome@twitterclone.com" 
+…
+  def notification_email(mentioned_user, tweet)
+    @user = mentioned_user
+    @tweet = tweet
+    mail to: mentioned_user.email, subject: "#{tweet.user.username} mentioned you in a tweet. Yay!"
+  end
+end
+
+d)*  views/user_mailer/notification_email.html.erb:  (text of email, with definitions from the mailer method):
+<p><%= @user.username %>,</p>
+
+<p>Thank you for signing up.</p>
+
+<p>'#{<%= @tweet.user.username %>} just mentioned you. Check it out #{<%=link_to "here", root_path %>} !'</p>
+
+

@@ -1,0 +1,110 @@
+open postgresql
+$ rails new texter -d postgresql –T
+
+*config/database.yml:
+
+development:
+  adapter: postgresql
+  host: localhost
+  database: texter_dev
+
+test:
+  adapter: postgresql
+  host: localhost
+  database: texter_test
+
+open postgres
+
+$ rake db:create
+
+update gemfile
+
+$ bundle install
+
+$ rails generate rspec:install
+
+
+*Bootstrap
+app/assets/stylesheets/application.css: change to css.scss (for sass).  Add:
+@import "bootstrap-sprockets";
+@import "bootstrap";
+@import "styling.scss"; [or other preferred file]
+
+javascripts/application.js: Add:
+//= require bootstrap-sprockets
+
+
+*users:
+
+--applications controller:
+  def current_user
+    @current_user ||= User.find(session[:user_id]) if session[:user_id]
+  end
+  helper_method :current_user
+
+  def authorize
+    redirect_to login_path, alert: "Not authorized" if current_user.nil? #relates to before filters. If user not logged in (ie, current_user = nil), then send error message if takes action not authorized to take
+  end
+
+--application.html.erb:
+<div class="container">
+     <div id="user_header">
+        <% if current_user %>
+          Logged in as <%= current_user.email %>.
+          <%= link_to "Log Out", logout_path %>
+        <% else %>
+          <%= link_to "Sign Up", signup_path %> or
+          <%= link_to "Log In", login_path %>
+        <% end %>
+      </div>
+
+
+
+    <% if flash[:notice] %>
+      <div class="alert alert-info">
+        <%= flash[:notice] %>
+      </div>
+    <% end %>
+    <% if flash[:alert] %>
+      <div class="alert alert-danger">
+        <%= flash[:alert] %>
+      </div>
+    <% end %>
+
+    <%= yield %>
+
+ </div>
+</body>
+
+
+
+*Flash Messages:
+views/layouts/application.html.erb:
+    <% if flash[:notice] %>
+      <div class="alert alert-info">
+        <%= flash[:notice] %>
+      </div>
+    <% end %>
+    <% if flash[:alert] %>
+      <div class="alert alert-danger">
+        <%= flash[:alert] %>
+      </div>
+    <% end %>
+
+*Migration [Examples:]
+
+$ rails g model messages  
+$ rails g model contacts
+[users created through devise here]
+$ rails generate migration AddUserIdToMessages user_id:integer
+
+
+
+
+[Note: if not using Devise, also create sessions contoller for logins--no migration or model required there]
+
+[examples of rollback, remove, and add:	
+	$ rake db:rollback VERSION=20150121004709 (delete file first; also can use STEP = 2)
+	$ rails generate migration RemoveRecipie_IdFromRecipesTags recipie_id:integer
+	$ rails generate migration AddImageToPhotos image:attachment
+	$ rails generate migration AddImageToPhotos image:attachment

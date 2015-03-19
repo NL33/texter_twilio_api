@@ -1,0 +1,24 @@
+<% if @message.errors.any? %>
+	<p> Something went wrong: </p>
+	<ul>
+	<% @message.errors.full_messages.each do |error_message| %>
+        <li><%= error_message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+</br>
+<h4> New Message to <%= @contact.name %>: </h4>
+</br>
+<%= form_for [@contact, @message] do |f| %>
+	<%= f.label :to %>
+	<%= f.text_field :to, value: @contact.number %>
+	<%= f.label :from %>
+	<%= f.text_field :from %>
+	<%= f.label :body %>
+	<%= f.text_field :body %>
+	<%= f.submit %>
+<% end %>
+</br>
+

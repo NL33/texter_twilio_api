@@ -1,0 +1,10 @@
+
+development:
+  adapter: postgresql
+  host: localhost
+  database: texter_dev
+
+test:
+  adapter: postgresql
+  host: localhost
+  database: texter_test

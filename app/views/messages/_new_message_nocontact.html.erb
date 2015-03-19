@@ -1,0 +1,27 @@
+
+
+<% if @message.errors.any? %>
+	<p> Something went wrong: </p>
+	<ul>
+	<% @message.errors.full_messages.each do |error_message| %>
+        <li><%= error_message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<%= form_for @message do |f| %>
+	<%= f.label "Select Contact(s) to Send Message to:" %></br>
+    <%= f.collection_check_boxes(:to, current_user.contacts, :number, :name, multiple: true) %></br>
+	<%= f.label :from %>
+	<%= f.text_field :from %>
+	<%= f.label :body %>
+	<%= f.text_field :body %>
+	<%= f.submit %>
+<% end %>
+
+<h3> Add Contacts for this message </h3>
+
+<%= link_to "Add Contacts For this Message", new_message_path, :class => "btn btn-default", id: "new_contact", remote: true  %>
+
+</br>

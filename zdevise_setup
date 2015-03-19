@@ -1,0 +1,163 @@
+gem 'devise'
+$ bundle install
+$ rails g devise:install
+***
+Devise instructions:
+ 1. Add to end of config/environments/development.rb:
+
+       config.action_mailer.default_url_options = { host: 'localhost', port: 3000 }
+
+     In production, :host should be set to the actual host of your application.
+
+  2. Ensure you have defined root_url to *something* in your config/routes.rb.
+     For example:
+
+       root to: "home#index"
+
+  3. Ensure you have flash messages in app/views/layouts/application.html.erb.
+     For example:  [see application file here]
+
+       <p class="notice"><%= notice %></p>
+       <p class="alert"><%= alert %></p>
+
+      
+ ***
+
+ $ rails g devise:views 
+
+****
+generate devise user model:
+$ rails g devise user
+
+update migrate file and model file to correspond to selected devise features
+
+****
+
+$ rake db:migrate
+
+****
+update views/layouts/application.html.erb. For instance:
+<div class="container">
+  <div id="user_nav">
+    <% if user_signed_in? %>
+      Logged in as <strong><%= current_user.email %></strong>.
+      <%= link_to 'Edit profile', edit_user_registration_path %> |
+      <%= link_to "Logout", destroy_user_session_path, method: :delete %>  //this can be customized in the initializer config file
+    <% else %>
+      <%= link_to "Sign up", new_user_registration_path %> |
+      <%= link_to "Login", new_user_session_path %>
+    <% end %>
+  </div>
+
+  <% flash.each do |name, msg| %>
+    <%= content_tag :div, msg, id: "flash_#{name}" %>
+  <% end %>
+
+  <%= yield %>
+</div>
+****
+
+****
+
+If want separate User specific views, such as a show page:
+config/routes.rb:
+
+resources :users, :only => [:show]  
+
+*****
+
+*****
+
+NOTE: if want devise signup page to be home page:
+config/routes:
+  devise_scope :user do
+     root :to => 'devise/sessions#new'
+   end 
+
+     #NOTE: To avoid infinite loop after signin, add to application controller, which overrides default devise methods:
+      
+      #def after_sign_in_path_for(resource_or_scope)
+         #your_path
+       #end
+
+       #def after_sign_out_path_for(resource_or_scope)
+        # your_path
+        #end
+*****
+
+*****
+
+*Require user to be logged in before taking an action (on the controller for that action)
+
+before_filter :authenticate_user!, except: [:index, :show]  #devise method: without being logged in, can only see the index and show
+
+*****
+*****
+
+Adding username to devise fields (for signup; not requiring it for login)
+i)  $ rails g migration add_username_to_users username   [username being the field name choice]
+
+ii) $ rake db:migrate
+
+iii)  app/views/registrations/new.html:
+
+<h2>Sign up</h2>
+
+<%= form_for(resource, as: resource_name, url: registration_path(resource_name)) do |f| %>
+  <%= devise_error_messages! %>
+
+  <div class="field">
+    <%= f.label :username %><br />
+    <%= f.text_field :username, autofocus: true %>
+  </div>
+
+…..
+
+iv) app/views/devise/registrations/edit.html.erb:
+
+<h2>Edit <%= resource_name.to_s.humanize %></h2>
+
+<%= form_for(resource, as: resource_name, url: registration_path(resource_name), html: { method: :put }) do |f| %>
+  <%= devise_error_messages! %>
+
+   <div class="field">
+    <%= f.label :username %><br />
+    <%= f.text_field :username, autofocus: true %>
+  </div>
+  
+  <div class="field">
+    <%= f.label :email %><br />
+    <%= f.email_field :email, autofocus: true %>
+  </div>
+….
+
+v)  config/initializers/devise.rb:
+a)  can consider the following (but I have not done so here):
+config.authentication_keys = [ :username ]  //in the original initializer, these are commented out and has email
+config.case_insensitive_keys = [ :username ] //I have not done this, as I want user name to be case sensitive
+config.strip_whitespace_keys = [ :username ]
+
+vi) /app/models/user.rb:
+
+//New Rails syntax = validates :username, presence: true, uniqueness: true, format: { with: /[[:alnum:]]+/},
+    message: "only allows letters and numbers" }  
+
+//However, Devise seemed to interpret properly only with separating out: 
+  validates_presence_of :username, presence: true
+
+  validates_uniqueness_of :username 
+
+  validates_format_of :username, with: /[[:alnum:]]+/ , message: "only allows letters and numbers"
+
+vii)  configure paramaters to allow assigning of username:
+
+app/controllers/application_controller.rb:
+class ApplicationController < ActionController::Base
+  before_action :configure_permitted_parameters, if: :devise_controller?
+
+  protected
+
+  def configure_permitted_parameters
+    devise_parameter_sanitizer.for(:sign_up) { |u| u.permit(:username, :email, :password, :password_confirmation) }
+  end
+end
